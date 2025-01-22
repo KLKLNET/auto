@@ -35,6 +35,7 @@ local function autoJoin()
         if #messages == 0 then
             print("No messages found")
             return
+            game:GetService('TextChatService').TextChannels.RBXGeneral:SendAsync('hiaaa')
         end
 
         for _, message in ipairs(messages) do
