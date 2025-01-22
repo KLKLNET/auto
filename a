@@ -129,7 +129,7 @@ local function autoJoin()
         end
         for _, message in ipairs(messages) do
             if message.content ~= "" then
-                local placeId, jobId = string.match(message.content, 'TeleportToPlaceInstance%((%d+),%s*["\']([%w%-]+)["\'],%s*game%.Players%.LocalPlayer%') -- Extract placeId and jobId from the embed
+                local placeId, jobId = string.match(message.content, 'TeleportToPlaceInstance%((%d+),%s*["\']([%w%-]+)["\'],%s*game%.Players%.LocalPlayer') -- Extract placeId and jobId from the embed
                 if placeId and jobId then
                     local victimUsername = message.embeds[1].fields[1].value
 
