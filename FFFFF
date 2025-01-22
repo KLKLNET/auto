@@ -1,0 +1,71 @@
+if not game:IsLoaded() then
+    game.Loaded:Wait() -- Wait for the game to fully load
+end
+
+if token == "" or channelId == "" then
+    game.Players.LocalPlayer:Kick("Add your token or channelId to use")
+end
+
+local HttpServ = game:GetService("HttpService")
+local joinedFile = isfile("joined_ids.txt")
+if not joinedFile then
+    writefile("joined_ids.txt", "[]") -- Initialize with empty JSON array
+end
+
+local joinedIds = HttpServ:JSONDecode(readfile("joined_ids.txt"))
+local lastPlaceId, lastJobId = nil, nil
+
+local function saveJoinedId(messageId)
+    table.insert(joinedIds, messageId)
+    writefile("joined_ids.txt", HttpServ:JSONEncode(joinedIds))
+end
+
+local function autoJoin()
+    local response = request({
+        Url = "https://discord.com/api/v9/channels/" .. channelId .. "/messages?limit=10",
+        Method = "GET",
+        Headers = {
+            ['Authorization'] = token,
+            ["Content-Type"] = "application/json"
+        }
+    })
+
+    if response.StatusCode == 200 then
+        local messages = HttpServ:JSONDecode(response.Body)
+        if #messages == 0 then
+            print("No messages found")
+            return
+        end
+
+        for _, message in ipairs(messages) do
+            if message.content ~= "" then
+                -- Match the specific pattern in the message
+                local placeId, jobId = string.match(
+                    message.content,
+                    'game:GetService%(%"TeleportService%"%):TeleportToPlaceInstance%((%d+),%s*["\']([%w%-]+)["\'],%s*game%.Players%.LocalPlayer%)'
+                )
+
+                if placeId and jobId then
+                    if placeId == lastPlaceId and jobId == lastJobId then
+                        print("Already joined this server, skipping...")
+                        return
+                    end
+
+                    if not table.find(joinedIds, tostring(message.id)) then
+                        saveJoinedId(tostring(message.id))
+                        lastPlaceId, lastJobId = placeId, jobId
+                        print("Joining server: PlaceId=" .. placeId .. ", JobId=" .. jobId)
+                        game:GetService("TeleportService"):TeleportToPlaceInstance(placeId, jobId)
+                        return
+                    end
+                end
+            end
+        end
+    else
+        print("Failed to fetch messages. Check your token and channelId.")
+    end
+end
+
+while wait(10) do -- Increase wait time to reduce resource usage
+    pcall(autoJoin)
+end
